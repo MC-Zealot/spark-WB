@@ -64,8 +64,11 @@ object UserSimilarity {
     }
 
 
-    val ad_uids = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/data/fst_uids")
-    val kol_uids = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/data/kol_uids").filter(_.split("\t").length==2).map(_.split("\t")(0))
+//    val ad_uids = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/data/fst_uids")
+    val ad_uids = sc.textFile(args(0))
+//    val kol_uids = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/data/kol_uids_c1_c2").filter(_.split("\t").length==2).map(_.split("\t")(0))
+    val kol_uids = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/data/kol_priced").filter(_.split("\t").length==1).map(_.split("\t")(0))
+
 
     val filtered_ratings = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/kol_ratings/filtered/0104_2").
       map(x=>{
@@ -76,6 +79,13 @@ object UserSimilarity {
     val kol_ratings = filtered_ratings.join(kol_uids.map(x=>(x,1))).map(x=>(x._1,x._2._1.split(",").map(x=>(x.split("\t")(1),x.split("\t")(3).toInt)))) //uid,   List(uid,tag,rating,fans_count)
     val ad_ratings = filtered_ratings.join(ad_uids.map(x=>(x,1))).map(x=>(x._1,x._2._1.split(",").map(x=>(x.split("\t")(1),x.split("\t")(3).toInt))))
 
+//    val ad_count = ad_ratings.count()
+//    val kol_count = kol_ratings.count()
+//    val all_count = ad_ratings.cartesian(kol_ratings).count()
+//    println("kol_count: "+ kol_count)
+//    println("all_count: "+ ad_count)
+//    println("all_count: "+ all_count)
+
 
     ad_ratings.cartesian(kol_ratings).map(x=>{
       val ad_uid = x._1._1
@@ -85,7 +95,7 @@ object UserSimilarity {
       val kol_tag_ratings = x._2._2.toMap
 
       (ad_uid,kol_uid,similarity(ad_tag_ratings,kol_tag_ratings))
-    }).saveAsTextFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/similarity/cosine/20170129")
+    }).saveAsTextFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/similarity/cosine/20170130")
 
   }
 }

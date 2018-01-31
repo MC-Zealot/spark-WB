@@ -26,7 +26,21 @@ object UserSimilarityTop30 {
     sparkConf.set("spark.rpc.netty.dispatcher.numThreads", "2")
     val sc = new SparkContext(sparkConf)
 
-    val all_user_similarity = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/similarity/cosine/20170111")
+    var i = 0
+    args.foreach { x =>
+      println("input " + i + ": " + x)
+      i += 1
+    }
+    if( args.length <1){
+      println("size is not enough:" + args.length)
+      return 0;
+    }
+    val input = args(0)
+    val output = args(1)
+
+
+//    val all_user_similarity = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/similarity/cosine/20170111")
+    val all_user_similarity = sc.textFile(input)
 //    val all_count = all_user_similarity.count
 //    val distinct_ad_count = all_user_similarity.map(_.split(",")(0)).distinct().count()
 //    val distinct_kol_count = all_user_similarity.map(_.split(",")(1)).distinct().count()
@@ -41,7 +55,7 @@ object UserSimilarityTop30 {
       val uid = x._1
       val tags = x._2
       tags.map(x=>x.substring(1,x.length-1).replace(",","\t")).toSeq.sortWith(_.split("\t")(2).toDouble > _.split("\t")(2).toDouble).take(50)
-    }.saveAsTextFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/similarity/cosine/20170117")
+    }.saveAsTextFile(output)
 
   }
 }
