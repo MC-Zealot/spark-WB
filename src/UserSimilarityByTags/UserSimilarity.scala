@@ -70,7 +70,7 @@ object UserSimilarity {
     val kol_uids = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/data/kol_priced").filter(_.split("\t").length==1).map(_.split("\t")(0))
 
 
-    val filtered_ratings = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/kol_ratings/filtered/0104_2").
+    val filtered_ratings = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/kol_ratings/filtered/0131").
       map(x=>{
       val x2 = x.substring(5,x.length-1)
       (x2.split("\t")(0),x2)
@@ -95,7 +95,7 @@ object UserSimilarity {
       val kol_tag_ratings = x._2._2.toMap
 
       (ad_uid,kol_uid,similarity(ad_tag_ratings,kol_tag_ratings))
-    }).saveAsTextFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/similarity/cosine/20170130")
+    }).saveAsTextFile("/user_ext/ads_fanstop/yizhou/spark/user_similarity/similarity/cosine/20170131")
 
   }
 }
