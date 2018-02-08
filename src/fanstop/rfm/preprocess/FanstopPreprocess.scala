@@ -8,10 +8,10 @@ package fanstop.rfm.preprocess
  *
  */
 
+import java.text.SimpleDateFormat
 import java.util
 
 import org.apache.spark.{SparkContext, SparkConf}
-import org.apache.spark.sql.SparkSession
 
 
 object FanstopPreprocess {
@@ -26,14 +26,24 @@ object FanstopPreprocess {
       val expo = fields(2)
       val timestamps = fields(3)
       (uid,(expo.toInt,1,timestamps.toInt))
-    }.reduceByKey{(x,y)=>
-      var r3=0
-      if(x._3 < y._3){
+    }.reduceByKey { (x, y) =>
+      var r3 = 0
+      if (x._3 < y._3) {
         r3 = y._3
-      }else{
+      } else {
         r3 = x._3
       }
-      (x._1+y._1,x._2+y._2, r3)}
+      (x._1 + y._1, x._2 + y._2, r3)
+    }
+    .map{x=>
+      val expo = x._2._1
+      val count = x._2._2
+      val timestamps = x._2._3
+      val df: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
+      val date: String = df.format(timestamps.toLong)
+
+      x._1 + "\t" + expo + "\t" + count + "\t" + date
+    }
 
     c.take(10).foreach(println)
 
