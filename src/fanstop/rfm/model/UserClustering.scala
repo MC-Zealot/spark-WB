@@ -13,12 +13,13 @@ object UserClustering {
     val sparkConf = new SparkConf().setAppName("UserClustering yizhou").setMaster("local[1]")
     val sc = new SparkContext(sparkConf)
     // Load and parse the data
-    val data = sc.textFile("/Users/Zealot/dev/spark-2.0.0-bin-hadoop2.4/data/mllib/kmeans_data.txt")
+//    val data = sc.textFile("/Users/Zealot/dev/spark-2.0.0-bin-hadoop2.4/data/mllib/kmeans_data.txt")
+    val data = sc.textFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/")
     val parsedData = data.map(s => Vectors.dense(s.split(' ').map(_.toDouble))).cache()
 
     // Cluster the data into two classes using KMeans
-    val numClusters = 2
-    val numIterations = 20
+    val numClusters = 8
+    val numIterations = 200
     val clusters = KMeans.train(parsedData, numClusters, numIterations)
 
     // Evaluate clustering by computing Within Set Sum of Squared Errors

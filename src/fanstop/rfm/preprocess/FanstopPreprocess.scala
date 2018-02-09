@@ -53,7 +53,7 @@ object FanstopPreprocess {
     val sc = new SparkContext(sparkConf)
 
     val c = sc.wholeTextFiles("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/data/").
-      filter(_._1.endsWith("fans_new")).
+      filter(_._1.endsWith("fans")).
       flatMap(_._2.split("\n"))
       .map{x=>
       val fields = x.split("\t")
@@ -77,11 +77,12 @@ object FanstopPreprocess {
       val count = x._2._2
       val timestamps = x._2._3
       val aa = getCoreTime(parseDate(timestamps), getNowDate())
-            x._1 + "\t" + expo + "\t" + count + "\t" + aa
+             expo + " " + count + " " + aa
 //      x._1 + "\t" + expo + "\t" + count + "\t" + timestamps
     }
 
     c.collect.foreach(println)
 println(c.count)
+    c.saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/")
   }
 }
