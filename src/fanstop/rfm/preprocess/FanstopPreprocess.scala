@@ -8,7 +8,7 @@ package fanstop.rfm.preprocess
  *
  */
 
-import java.text.SimpleDateFormat
+import java.text.{DecimalFormat, SimpleDateFormat}
 import java.util.Date
 
 import org.apache.spark.{SparkContext, SparkConf}
@@ -26,6 +26,26 @@ object FanstopPreprocess {
     val date:String = sdf.format(new Date((time.toLong*1000l)))
     date
   }
+  def getNowDate():String={
+    var now:Date = new Date()
+    var  dateFormat:SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
+    var hehe = dateFormat.format( now )
+    hehe
+  }
+
+  //核心工作时间，迟到早退等的的处理
+  def getCoreTime(start_time: String, end_Time: String) = {
+    val df: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
+    val begin: Date = df.parse(start_time)
+    val end: Date = df.parse(end_Time)
+    val between: Long = (end.getTime() - begin.getTime()) / 1000 //转化成秒
+    val hour: Float = between.toFloat / 3600
+    val day: Int = hour.toInt / 24
+//    val decf: DecimalFormat = new DecimalFormat("#.00")
+//    decf.format(hour) //格式化
+    day
+  }
+
   def main(args: Array[String]) {
 
 //做一个过滤，粉丝数》50，标签保留人数的top50
@@ -56,8 +76,8 @@ object FanstopPreprocess {
       val expo = x._2._1
       val count = x._2._2
       val timestamps = x._2._3
-
-            x._1 + "\t" + expo + "\t" + count + "\t" + parseDate(timestamps)
+      val aa = getCoreTime(parseDate(timestamps), getNowDate())
+            x._1 + "\t" + expo + "\t" + count + "\t" + aa
 //      x._1 + "\t" + expo + "\t" + count + "\t" + timestamps
     }
 
