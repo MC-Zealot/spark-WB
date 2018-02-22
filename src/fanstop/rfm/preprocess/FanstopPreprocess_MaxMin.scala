@@ -11,14 +11,12 @@ package fanstop.rfm.preprocess
 import java.text.{DecimalFormat, SimpleDateFormat}
 import java.util.Date
 
-import org.apache.spark.ml.feature.{MinMaxScaler, StandardScaler, QuantileDiscretizer}
-import org.apache.spark.mllib.stat.{Statistics, MultivariateStatisticalSummary}
+import org.apache.spark.ml.feature.{MinMaxScaler}
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkContext, SparkConf}
-import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.ml.linalg.Vectors
 
-object FanstopPreprocess {
+object FanstopPreprocess_MaxMin {
   /**
    * 时间戳转时间
    * @param time
@@ -35,7 +33,7 @@ object FanstopPreprocess {
     var hehe = dateFormat.format( now )
     hehe
   }
-  case class RFM(r:Double,f:Double,m:Double)//
+  case class RFM(r:org.apache.spark.ml.linalg.Vector)//
 
   //核心工作时间，迟到早退等的的处理
   def getCoreTime(start_time: String, end_Time: String) = {
@@ -45,8 +43,6 @@ object FanstopPreprocess {
     val between: Long = (end.getTime() - begin.getTime()) / 1000 //转化成秒
     val hour: Float = between.toFloat / 3600
     val day: Int = hour.toInt / 24
-//    val decf: DecimalFormat = new DecimalFormat("#.00")
-//    decf.format(hour) //格式化
     day
   }
 
@@ -82,53 +78,26 @@ object FanstopPreprocess {
              val a = recency + " " + count + " " + expo
       a.split(" ")
     }.map{x=>
-      RFM(x(0).toDouble,x(1).toDouble,x(2).toDouble)
+      RFM(Vectors.dense(x(0).toDouble,x(1).toDouble,x(2).toDouble))
     }
-    val cdf = c.toDF()
-//    cdf.show(100)
-//    val mean =cdf.describe("r","f","m").where("summary='mean'")
-//    mean.show()
-//    val r_mean = mean.select("r").collect
-//    val f_mean = mean.select("f").collect
-//    val m_mean = mean.select("m").collect
-//    println(r_mean(0))
-//    println(f_mean(0))
-//    println(m_mean(0))
 
-    val rdf = new QuantileDiscretizer()
+    val cdf = c.toDF()
+
+    val scaledData = new MinMaxScaler()
       .setInputCol("r")
-      .setOutputCol("rCategory")
-      .setNumBuckets(5)//设置分箱数
-      .setRelativeError(0.1)//设置precision-控制相对误差
+      .setOutputCol("scaledFeatures")
+      .setMax(5)
+      .setMin(0)
       .fit(cdf)
       .transform(cdf);
 
 
-
-    val mdf = new QuantileDiscretizer()
-      .setInputCol("m")
-      .setOutputCol("mCategory")
-      .setNumBuckets(5)//设置分箱数
-      .setRelativeError(0.1)//设置precision-控制相对误差
-      .fit(rdf)
-      .transform(rdf);
-
-    val fdf = new QuantileDiscretizer()
-      .setInputCol("f")
-      .setOutputCol("fCategory")
-      .setNumBuckets(3)//设置分箱数
-      .setRelativeError(0.1)//设置precision-控制相对误差
-      .fit(mdf)
-      .transform(mdf)
-//    val cc = fdf.filter("f>1")
-    fdf.show(100)
-    println(fdf.count)
-//    c.collect.foreach(println)
-//println(c.count)
-    fdf.select("rCategory","fCategory","mCategory").rdd.map{x=>
+    scaledData.show(10)
+    println(scaledData.count)
+    scaledData.rdd.map{x=>
     val l = x.toString().length
       x.toString().substring(1,l-1).replace(","," ")
-  }.saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0211")
+  }.saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0222")
 
 
   }
