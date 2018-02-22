@@ -105,10 +105,10 @@ object FanstopPreprocess_MaxMin {
     cdf.describe().show
 
     c.map { x =>
-      val rr = (x.r - r_min) / diff_r * diff_bound + r_min
-      val ff = (x.f - f_min) / diff_f * diff_bound + f_min
-      val mm = (x.m - m_min) / diff_m * diff_bound + m_min
-      rr + " " + ff + " " + mm
+      val rr = (x.r - r_min) / diff_r * diff_bound
+      val ff = (x.f - f_min) / diff_f * diff_bound
+      val mm = (x.m - m_min) / diff_m * diff_bound
+     x+"|"+ rr + " " + ff + " " + mm
     }.take(10).foreach(println)
 
 //    val scaledData = new MinMaxScaler()
