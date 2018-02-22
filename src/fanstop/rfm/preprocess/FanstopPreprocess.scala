@@ -122,13 +122,13 @@ object FanstopPreprocess {
       .transform(mdf)
 //    val cc = fdf.filter("f>1")
     fdf.show(100)
-    println(fdf.count)
+//    println(fdf.count)
 //    c.collect.foreach(println)
 //println(c.count)
-    fdf.select("rCategory","fCategory","mCategory").rdd.map{x=>
-    val l = x.toString().length
-      x.toString().substring(1,l-1).replace(","," ")
-  }.saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0211")
+//    fdf.select("rCategory","fCategory","mCategory").rdd.map{x=>
+//    val l = x.toString().length
+//      x.toString().substring(1,l-1).replace(","," ")
+//  }.saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0211")
 
 
   }

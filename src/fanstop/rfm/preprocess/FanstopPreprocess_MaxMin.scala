@@ -33,7 +33,7 @@ object FanstopPreprocess_MaxMin {
     var hehe = dateFormat.format( now )
     hehe
   }
-  case class RFM(r:org.apache.spark.ml.linalg.Vector)//
+  case class RFM(r:Double,f:Double,m:Double)//
 
   //核心工作时间，迟到早退等的的处理
   def getCoreTime(start_time: String, end_Time: String) = {
@@ -61,7 +61,7 @@ object FanstopPreprocess_MaxMin {
       val expo = fields(2)
       val timestamps = fields(3)
 
-      (uid, (expo.toInt, 1, timestamps))
+      (uid, (expo.toDouble, 1, timestamps))
     }.reduceByKey { (x, y) =>
       var r3 = ""
       if (x._3 < y._3) {
@@ -75,29 +75,58 @@ object FanstopPreprocess_MaxMin {
       val count = x._2._2
       val timestamps = x._2._3
       val recency = getCoreTime(parseDate(timestamps), getNowDate())
-             val a = recency + " " + count + " " + expo
-      a.split(" ")
+//             val a = recency + " " + count + " " + expo
+//      a.split(" ")
+      Array(recency,count,expo)
     }.map{x=>
-      RFM(Vectors.dense(x(0).toDouble,x(1).toDouble,x(2).toDouble))
+      RFM(x(0).toDouble,x(1).toDouble,x(2).toDouble)
     }
 
+    c.take(10).foreach(println)
     val cdf = c.toDF()
 
-    val scaledData = new MinMaxScaler()
-      .setInputCol("r")
-      .setOutputCol("scaledFeatures")
-      .setMax(5)
-      .setMin(0)
-      .fit(cdf)
-      .transform(cdf);
+//    val r_max = cdf.describe("r").where("summary='max'").head(1)(0)(1).toString.toDouble
+    val r_max = cdf.describe("r").where("summary='max'").head(1)(0)(1).toString.toDouble
+    val r_min = cdf.describe("r").where("summary='min'").head(1)(0)(1).toString.toDouble
+    val diff_r = r_max - r_min
 
+    val f_max = cdf.describe("f").where("summary='max'").head(1)(0)(1).toString.toDouble
+    val f_min = cdf.describe("f").where("summary='min'").head(1)(0)(1).toString.toDouble
+    val diff_f = f_max - f_min
 
-    scaledData.show(10)
-    println(scaledData.count)
-    scaledData.rdd.map{x=>
-    val l = x.toString().length
-      x.toString().substring(1,l-1).replace(","," ")
-  }.saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0222")
+    val m_max = cdf.describe("m").where("summary='max'").head(1)(0)(1).toString.toDouble
+    val m_min = cdf.describe("m").where("summary='min'").head(1)(0)(1).toString.toDouble
+    val diff_m = m_max - m_min
+
+    val upper = 5
+    val lowwer = 0
+    val diff_bound = upper - lowwer
+
+    cdf.describe().show
+
+    c.map { x =>
+      val rr = (x.r - r_min) / diff_r * diff_bound + r_min
+      val ff = (x.f - f_min) / diff_f * diff_bound + f_min
+      val mm = (x.m - m_min) / diff_m * diff_bound + m_min
+      rr + " " + ff + " " + mm
+    }.take(10).foreach(println)
+
+//    val scaledData = new MinMaxScaler()
+//      .setInputCol("r")
+//      .setOutputCol("scaledFeatures")
+//      .setMax(5)
+//      .setMin(0)
+//      .fit(cdf)
+//      .transform(cdf);
+//
+//
+//    scaledData.show(10)
+//    println(scaledData.count)
+//    scaledData.rdd.map{x=>
+//      x(1).toString().replace(","," ").replace("[","").replace("]","")
+//    }.
+//    take(100).foreach(println)
+//      repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0222")
 
 
   }
