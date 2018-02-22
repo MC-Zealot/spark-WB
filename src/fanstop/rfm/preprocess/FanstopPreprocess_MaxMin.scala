@@ -79,7 +79,7 @@ object FanstopPreprocess_MaxMin {
 //      a.split(" ")
       Array(recency,count,expo)
     }.map{x=>
-      RFM(x(0).toDouble,x(1).toDouble,x(2).toDouble)
+      RFM(x(0),x(1),x(2))
     }
 
     c.take(10).foreach(println)
