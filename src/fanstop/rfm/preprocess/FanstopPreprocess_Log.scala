@@ -33,7 +33,7 @@ object FanstopPreprocess_Log {
     var hehe = dateFormat.format( now )
     hehe
   }
-  case class RFM(uid:Double, r:Double,f:Double,m:Double, log_f:Double)//
+  case class RFM(uid:Double, r:Double,f:Double,m:Double, log_f:Double, log_m:Double)//
 
   //核心工作时间，迟到早退等的的处理
   def getCoreTime(start_time: String, end_Time: String) = {
@@ -55,7 +55,7 @@ object FanstopPreprocess_Log {
     import sqlCon.implicits._
     val c = sc.wholeTextFiles("file:///Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/data/").
       filter(_._1.endsWith("all_fans")).
-      flatMap(_._2.split("\n")).map{x=>
+      flatMap(_._2.split("\n")).filter(_.split("\t").length==4).map{x=>
       val fields = x.split("\t")
       val uid = fields(1)
       val expo = fields(2)
@@ -79,15 +79,17 @@ object FanstopPreprocess_Log {
 //             val a = recency + " " + count + " " + expo
 //      a.split(" ")
       Array(uid,recency,count,expo)
-    }.map{x=>
-      val log_f = Math.log(x(1).toString.toDouble)/Math.log(5)
+    }.filter(x=>(x(3)>=1)).map{x=>
+      val log_f = Math.log(x(2))/Math.log(5)
+      val log_m = Math.log(x(3))/Math.log(5)
 
-      RFM(x(0),x(1),x(2),x(3), log_f)
-    }.sortBy(_.r,true)
-
-    c.take(10).foreach(println)
+      RFM(x(0),x(1),x(2),x(3), log_f, log_m)
+    }
+val count = 100
+    c.filter(_.log_m.toString.equals("-Infinity")).take(count).foreach(x=>println(x))
     val cdf = c.toDF()
-
+//    cdf.limit(count).describe().show
+//    sc.stop
 //    val r_max = cdf.describe("r").where("summary='max'").head(1)(0)(1).toString.toDouble
     val r_max = cdf.describe("r").where("summary='max'").head(1)(0)(1).toString.toDouble
     val r_min = cdf.describe("r").where("summary='min'").head(1)(0)(1).toString.toDouble
@@ -97,25 +99,26 @@ object FanstopPreprocess_Log {
     val log_f_min = cdf.describe("log_f").where("summary='min'").head(1)(0)(1).toString.toDouble
     val diff_f = log_f_max - log_f_min
 
-    val m_max = cdf.describe("m").where("summary='max'").head(1)(0)(1).toString.toDouble
-    val m_min = cdf.describe("m").where("summary='min'").head(1)(0)(1).toString.toDouble
+    val log_m_max = cdf.describe("log_m").where("summary='max'").head(1)(0)(1).toString.toDouble
+    val log_m_min = cdf.describe("log_m").where("summary='min'").head(1)(0)(1).toString.toDouble
     val m_stddev = cdf.describe("m").where("summary='stddev'").head(1)(0)(1).toString.toDouble
     val m_mean = cdf.describe("m").where("summary='mean'").head(1)(0)(1).toString.toDouble
-    val diff_m = m_max - m_min
+    val diff_m = log_m_max - log_m_min
 
     val upper = 5
     val lowwer = 0
     val diff_bound = upper - lowwer
 
     cdf.describe().show
-    sc.stop
+//    sc.stop
 
     c.map { x =>
       val rr = (x.r - r_min) / diff_r * diff_bound
       val log_ff = (x.log_f - log_f_min) / diff_f * diff_bound
-      var mm = 0.0
-      val fenduan_threshold_m = 5.761363432594561E9
-      mm = (x.m - m_mean) / m_stddev
+      val log_mm = (x.log_m - log_m_min) / diff_m * diff_bound
+//      var mm = 0.0
+//      val fenduan_threshold_m = 5.761363432594561E9
+//      mm = (x.m - m_mean) / m_stddev
 
 //      if(x.m > fenduan_threshold_m){
 //        mm = (x.m - fenduan_threshold_m) / (m_max - fenduan_threshold_m) + 4
@@ -124,11 +127,11 @@ object FanstopPreprocess_Log {
 //      }
 
 
-     x+" || "+ rr + " " + log_ff + " " + mm
-//      rr + " " + log_ff + " " + mm
+//     x+" || "+ rr + " " + log_ff + " " + mm
+      rr + " " + log_ff + " " + log_mm
     }.
-      take(1000).foreach(println)
-//      repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0223")
+//      take(100).foreach(println)
+      repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0223")
 
 
   }

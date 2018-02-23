@@ -23,7 +23,7 @@ object UserClustering {
 
     // Cluster the data into two classes using KMeans
     val numClusters = 5
-    val numIterations = 30
+    val numIterations = 20
 
     //选择err下降比较多的k：6
 //    var a = ArrayBuffer[String]()
