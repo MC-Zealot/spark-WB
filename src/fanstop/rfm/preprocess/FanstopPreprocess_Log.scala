@@ -113,6 +113,7 @@ val count = 100
 //    sc.stop
 
     c.map { x =>
+      val uid = x.uid
       val rr = (x.r - r_min) / diff_r * diff_bound
       val log_ff = (x.log_f - log_f_min) / diff_f * diff_bound
       val log_mm = (x.log_m - log_m_min) / diff_m * diff_bound
@@ -128,10 +129,10 @@ val count = 100
 
 
 //     x+" || "+ rr + " " + log_ff + " " + mm
-      rr + " " + log_ff + " " + log_mm
+        uid.toLong + " "+ rr + " " + log_ff + " " + log_mm
     }.
 //      take(100).foreach(println)
-      repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0223")
+      repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0223_uid")
 
 
   }
