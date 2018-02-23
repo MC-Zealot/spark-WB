@@ -76,8 +76,7 @@ object FanstopPreprocess_Log {
       val count = x._2._2
       val timestamps = x._2._3
       val recency = getCoreTime(parseDate(timestamps), getNowDate())
-//             val a = recency + " " + count + " " + expo
-//      a.split(" ")
+
       Array(uid,recency,count,expo)
     }.filter(x=>(x(3)>=1)).map{x=>
       val log_f = Math.log(x(2))/Math.log(5)
@@ -88,9 +87,7 @@ object FanstopPreprocess_Log {
 val count = 100
     c.filter(_.log_m.toString.equals("-Infinity")).take(count).foreach(x=>println(x))
     val cdf = c.toDF()
-//    cdf.limit(count).describe().show
-//    sc.stop
-//    val r_max = cdf.describe("r").where("summary='max'").head(1)(0)(1).toString.toDouble
+
     val r_max = cdf.describe("r").where("summary='max'").head(1)(0)(1).toString.toDouble
     val r_min = cdf.describe("r").where("summary='min'").head(1)(0)(1).toString.toDouble
     val diff_r = r_max - r_min
@@ -117,18 +114,6 @@ val count = 100
       val rr = (x.r - r_min) / diff_r * diff_bound
       val log_ff = (x.log_f - log_f_min) / diff_f * diff_bound
       val log_mm = (x.log_m - log_m_min) / diff_m * diff_bound
-//      var mm = 0.0
-//      val fenduan_threshold_m = 5.761363432594561E9
-//      mm = (x.m - m_mean) / m_stddev
-
-//      if(x.m > fenduan_threshold_m){
-//        mm = (x.m - fenduan_threshold_m) / (m_max - fenduan_threshold_m) + 4
-//      }else{
-//        mm = (x.m - m_min) /  (fenduan_threshold_m - m_min) * diff_bound
-//      }
-
-
-//     x+" || "+ rr + " " + log_ff + " " + mm
         uid.toLong + " "+ rr + " " + log_ff + " " + log_mm
     }.
 //      take(100).foreach(println)
