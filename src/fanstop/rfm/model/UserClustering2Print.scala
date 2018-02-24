@@ -10,7 +10,7 @@ import org.apache.spark.{SparkContext, SparkConf}
 /**
  * Created by yizhou on 2018/02/09.
  */
-object UserClustering {
+object UserClustering2Print {
   case class TRAIN_DATA(uid:Long, r:Double, log_f:Double, log_m:Double)//
   def main(args: Array[String]): Unit = {
     val sparkConf = new SparkConf().setAppName("UserClustering yizhou").setMaster("local[2]")

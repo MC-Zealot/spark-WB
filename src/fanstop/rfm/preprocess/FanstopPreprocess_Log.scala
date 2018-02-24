@@ -3,7 +3,8 @@ package fanstop.rfm.preprocess
 /**
  * Created by yizhou on 2018/02/23
  * rfm数据预处理
- * 由于f和m特征分布
+ * r：最近一次购买的时间距离当前时间的时间差，所以整体数据呈现线性分布
+ * f：购买的次数。由于大部分用户只购买少量次数（5次以内，一个月），高于5次的用户数量很少，max为934（1个月），所以数据呈现非线性，需要进行非线性转换
  *max min标准化是线性转换，针对非线性数据无法把数据区分开
  * log函数转换标准化
  */
@@ -33,7 +34,7 @@ object FanstopPreprocess_Log {
     var hehe = dateFormat.format( now )
     hehe
   }
-  case class RFM(uid:Double, r:Double,f:Double,m:Double, log_f:Double, log_m:Double)//
+  case class RFM(uid:String, r:Double,f:Double,m:Double, log_f:Double, log_m:Double)//
 
   /**
    * 计算时间差
@@ -75,21 +76,21 @@ object FanstopPreprocess_Log {
       }
       (x._1 + y._1, x._2 + y._2, r3)
     }.map{x=>
-      val uid = x._1.toDouble
+      val uid = x._1
       val expo = x._2._1
       val count = x._2._2
       val timestamps = x._2._3
       val recency = getCoreTime(parseDate(timestamps), getNowDate())
 
-      Array(uid,recency,count,expo)
-    }.filter(x=>(x(3)>=1)).map{x=>
-      val log_f = Math.log(x(2))/Math.log(5)//log标准化
-      val log_m = Math.log(x(3))/Math.log(5)
+      (uid,recency,count,expo)
+    }.filter(x=>(x._4 >= 1)).map{x=>
+      val log_f = Math.log(x._3)/Math.log(5)//log标准化
+      val log_m = Math.log(x._4)/Math.log(5)
 
-      RFM(x(0),x(1),x(2),x(3), log_f, log_m)
+      RFM(x._1,x._2,x._3,x._4, log_f, log_m)
     }
-    val count = 100
-    c.filter(_.log_m.toString.equals("-Infinity")).take(count).foreach(x=>println(x))
+//    val count = 100
+//    c.filter(_.log_m.toString.equals("-Infinity")).take(count).foreach(x=>println(x))
     val cdf = c.toDF()
 
     val r_max = cdf.describe("r").where("summary='max'").head(1)(0)(1).toString.toDouble
