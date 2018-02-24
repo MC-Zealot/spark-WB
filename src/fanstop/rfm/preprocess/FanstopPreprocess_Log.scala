@@ -1,11 +1,11 @@
 package fanstop.rfm.preprocess
 
 /**
- * Created by yizhou on 2017/12/25
- * 获取用户（kol）粉丝的标签，
- * 1、计算用户各标签下，粉丝数、评分数
- * 2、取评分前50的标签
- *
+ * Created by yizhou on 2018/02/23
+ * rfm数据预处理
+ * 由于f和m特征分布
+ *max min标准化是线性转换，针对非线性数据无法把数据区分开
+ * log函数转换标准化
  */
 
 import java.text.{DecimalFormat, SimpleDateFormat}
@@ -35,7 +35,12 @@ object FanstopPreprocess_Log {
   }
   case class RFM(uid:Double, r:Double,f:Double,m:Double, log_f:Double, log_m:Double)//
 
-  //核心工作时间，迟到早退等的的处理
+  /**
+   * 计算时间差
+   * @param start_time
+   * @param end_Time
+   * @return
+   */
   def getCoreTime(start_time: String, end_Time: String) = {
     val df: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
     val begin: Date = df.parse(start_time)
@@ -48,7 +53,6 @@ object FanstopPreprocess_Log {
 
   def main(args: Array[String]) {
 
-//做一个过滤，粉丝数》50，标签保留人数的top50
     val sparkConf = new SparkConf().setAppName("FanstopPreprocess yizhou").setMaster("local[2]")
     val sc = new SparkContext(sparkConf)
     val sqlCon=new SQLContext(sc)
@@ -79,12 +83,12 @@ object FanstopPreprocess_Log {
 
       Array(uid,recency,count,expo)
     }.filter(x=>(x(3)>=1)).map{x=>
-      val log_f = Math.log(x(2))/Math.log(5)
+      val log_f = Math.log(x(2))/Math.log(5)//log标准化
       val log_m = Math.log(x(3))/Math.log(5)
 
       RFM(x(0),x(1),x(2),x(3), log_f, log_m)
     }
-val count = 100
+    val count = 100
     c.filter(_.log_m.toString.equals("-Infinity")).take(count).foreach(x=>println(x))
     val cdf = c.toDF()
 
@@ -98,8 +102,6 @@ val count = 100
 
     val log_m_max = cdf.describe("log_m").where("summary='max'").head(1)(0)(1).toString.toDouble
     val log_m_min = cdf.describe("log_m").where("summary='min'").head(1)(0)(1).toString.toDouble
-    val m_stddev = cdf.describe("m").where("summary='stddev'").head(1)(0)(1).toString.toDouble
-    val m_mean = cdf.describe("m").where("summary='mean'").head(1)(0)(1).toString.toDouble
     val diff_m = log_m_max - log_m_min
 
     val upper = 5
@@ -111,7 +113,7 @@ val count = 100
 
     c.map { x =>
       val uid = x.uid
-      val rr = (x.r - r_min) / diff_r * diff_bound
+      val rr = (x.r - r_min) / diff_r * diff_bound//max min 标准化
       val log_ff = (x.log_f - log_f_min) / diff_f * diff_bound
       val log_mm = (x.log_m - log_m_min) / diff_m * diff_bound
         uid.toLong + " "+ rr + " " + log_ff + " " + log_mm
