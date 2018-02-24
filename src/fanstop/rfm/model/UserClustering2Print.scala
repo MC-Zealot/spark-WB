@@ -16,7 +16,7 @@ object UserClustering2Print {
     val sparkConf = new SparkConf().setAppName("UserClustering yizhou").setMaster("local[2]")
     val sc = new SparkContext(sparkConf)
     // Load and parse the data
-    val data = sc.textFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0223_uid").distinct()
+    val data = sc.textFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0224_uid").distinct()
     val sqlCon=new SQLContext(sc)
     import sqlCon.implicits._
 

@@ -57,7 +57,8 @@ object FanstopPreprocess_Log {
     val sparkConf = new SparkConf().setAppName("FanstopPreprocess yizhou").setMaster("local[2]")
     val sc = new SparkContext(sparkConf)
     val sqlCon=new SQLContext(sc)
-    val LOG = Math.log(5)
+    val LOG_M = Math.log(10)
+    val LOG_f = Math.log(5)
     import sqlCon.implicits._
       val c = sc.textFile("file:///Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/data/201707_201802_all").
         filter(_.split("\t").length == 4).map { x =>
@@ -84,8 +85,8 @@ object FanstopPreprocess_Log {
 
       (uid,recency,count,expo)
     }.filter(x=>(x._4 >= 1)).map{x=>
-      val log_f = Math.log(x._3)/LOG//log标准化
-      val log_m = Math.log(x._4)/LOG
+      val log_f = Math.log(x._3)/LOG_f//log标准化
+      val log_m = Math.log(x._4)/LOG_M
 
       RFM(x._1,x._2,x._3,x._4, log_f, log_m)
     }
@@ -117,10 +118,10 @@ object FanstopPreprocess_Log {
       val rr = (x.r - r_min) / rr_fenmu//max min 标准化
       val log_ff = (x.log_f - log_f_min) / log_ff_fenmu
       val log_mm = (x.log_m - log_m_min) / log_mm_fenmu
-        uid + " "+ rr + " " + log_ff + " " + log_mm
+        uid + " "+ rr + " " + log_ff + " " + log_mm+"|"+x
     }.
-      take(100).foreach(println)
-//      repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0223_uid")
+//      take(100).foreach(println)
+      saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0224_uid")
 
 
   }
