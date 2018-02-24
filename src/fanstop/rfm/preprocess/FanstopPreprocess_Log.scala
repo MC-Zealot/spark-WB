@@ -57,16 +57,16 @@ object FanstopPreprocess_Log {
     val sparkConf = new SparkConf().setAppName("FanstopPreprocess yizhou").setMaster("local[2]")
     val sc = new SparkContext(sparkConf)
     val sqlCon=new SQLContext(sc)
+    val LOG = Math.log(5)
     import sqlCon.implicits._
-    val c = sc.wholeTextFiles("file:///Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/data/").
-      filter(_._1.endsWith("all_fans")).
-      flatMap(_._2.split("\n")).filter(_.split("\t").length==4).map{x=>
-      val fields = x.split("\t")
-      val uid = fields(1)
-      val expo = fields(2)
-      val timestamps = fields(3)
+      val c = sc.textFile("file:///Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/data/201707_201802_all").
+        filter(_.split("\t").length == 4).map { x =>
+        val fields = x.split("\t")
+        val uid = fields(1)
+        val expo = fields(2)
+        val timestamps = fields(3)
 
-      (uid, (expo.toDouble, 1, timestamps))
+        (uid, (expo.toDouble, 1, timestamps))
     }.reduceByKey { (x, y) =>
       var r3 = ""
       if (x._3 < y._3) {
@@ -84,13 +84,11 @@ object FanstopPreprocess_Log {
 
       (uid,recency,count,expo)
     }.filter(x=>(x._4 >= 1)).map{x=>
-      val log_f = Math.log(x._3)/Math.log(5)//log标准化
-      val log_m = Math.log(x._4)/Math.log(5)
+      val log_f = Math.log(x._3)/LOG//log标准化
+      val log_m = Math.log(x._4)/LOG
 
       RFM(x._1,x._2,x._3,x._4, log_f, log_m)
     }
-//    val count = 100
-//    c.filter(_.log_m.toString.equals("-Infinity")).take(count).foreach(x=>println(x))
     val cdf = c.toDF()
 
     val r_max = cdf.describe("r").where("summary='max'").head(1)(0)(1).toString.toDouble
@@ -106,21 +104,23 @@ object FanstopPreprocess_Log {
     val diff_m = log_m_max - log_m_min
 
     val upper = 5
-    val lowwer = 0
-    val diff_bound = upper - lowwer
+    val lower = 0
+    val diff_bound = upper - lower
 
     cdf.describe().show
 //    sc.stop
-
+    val rr_fenmu = diff_r * diff_bound //优化一下速度，不用每个map里边都再计算一次乘法
+    val log_ff_fenmu = diff_f * diff_bound
+    val log_mm_fenmu = diff_m * diff_bound
     c.map { x =>
       val uid = x.uid
-      val rr = (x.r - r_min) / diff_r * diff_bound//max min 标准化
-      val log_ff = (x.log_f - log_f_min) / diff_f * diff_bound
-      val log_mm = (x.log_m - log_m_min) / diff_m * diff_bound
-        uid.toLong + " "+ rr + " " + log_ff + " " + log_mm
+      val rr = (x.r - r_min) / rr_fenmu//max min 标准化
+      val log_ff = (x.log_f - log_f_min) / log_ff_fenmu
+      val log_mm = (x.log_m - log_m_min) / log_mm_fenmu
+        uid + " "+ rr + " " + log_ff + " " + log_mm
     }.
-//      take(100).foreach(println)
-      repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0223_uid")
+      take(100).foreach(println)
+//      repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0223_uid")
 
 
   }
