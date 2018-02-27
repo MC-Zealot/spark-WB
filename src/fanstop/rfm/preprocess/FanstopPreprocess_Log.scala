@@ -110,9 +110,9 @@ object FanstopPreprocess_Log {
 
     cdf.describe().show
 //    sc.stop
-    val rr_fenmu = diff_r * diff_bound //优化一下速度，不用每个map里边都再计算一次乘法
-    val log_ff_fenmu = diff_f * diff_bound
-    val log_mm_fenmu = diff_m * diff_bound
+    val rr_fenmu = diff_r / diff_bound //优化一下速度，不用每个map里边都再计算一次乘法
+    val log_ff_fenmu = diff_f / diff_bound
+    val log_mm_fenmu = diff_m / diff_bound
     c.map { x =>
       val uid = x.uid
       val rr = (x.r - r_min) / rr_fenmu//max min 标准化
@@ -121,7 +121,7 @@ object FanstopPreprocess_Log {
         uid + " "+ rr + " " + log_ff + " " + log_mm+"|"+x
     }.
 //      take(100).foreach(println)
-      saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0224_uid")
+      saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0226_uid")
 
 
   }

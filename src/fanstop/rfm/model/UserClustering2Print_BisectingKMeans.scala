@@ -1,7 +1,7 @@
 package fanstop.rfm.model
 
 
-import org.apache.spark.mllib.clustering.{KMeans, KMeansModel}
+import org.apache.spark.mllib.clustering.{BisectingKMeans, KMeans, KMeansModel}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkContext, SparkConf}
@@ -10,13 +10,14 @@ import org.apache.spark.{SparkContext, SparkConf}
 /**
  * Created by yizhou on 2018/02/09.
  */
-object UserClustering2Print {
+object UserClustering2Print_BisectingKMeans {
   case class TRAIN_DATA(uid:Long, r:Double, log_f:Double, log_m:Double)//
   def main(args: Array[String]): Unit = {
     val sparkConf = new SparkConf().setAppName("UserClustering yizhou").setMaster("local[2]")
     val sc = new SparkContext(sparkConf)
+    sc.setLogLevel("error")
     // Load and parse the data
-    val data = sc.textFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0224_uid").distinct()
+    val data = sc.textFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0226_uid").map(_.split("\\|")(0)).distinct()
     val sqlCon=new SQLContext(sc)
     import sqlCon.implicits._
 
@@ -37,7 +38,8 @@ object UserClustering2Print {
     //    println(a)
     //    sc.stop()
 
-    val clusters = KMeans.train(parsedData_train, numClusters, numIterations)
+//    val clusters = KMeans.train(parsedData_train, numClusters, numIterations)
+    val clusters = new BisectingKMeans().setK(numClusters).run(parsedData_train)
 
     // Evaluate clustering by computing Within Set Sum of Squared Errors
     val WSSSE = clusters.computeCost(parsedData_train)
@@ -46,7 +48,7 @@ object UserClustering2Print {
 
     clusters.predict(parsedData_train).map(x=>(x,1)).reduceByKey(_+_).sortByKey(false).take(numClusters).foreach(println)//不同group的个数
 //sc.stop
-    data.take(500).foreach { x =>
+    data.take(100).foreach { x =>
       val uid = x.split(" ")(0)
       val fields = x.split(" ")
       val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
@@ -68,8 +70,10 @@ object UserClustering2Print {
         color="orange"
       }else if(label==6){
         color="purple"
-      }else{
+      }else if(label==7){
         color="brown"
+      }else {
+        color="grey"
       }
 //      println(label+" "+x)
             println("{x:"+fields(1)+",y:"+fields(2)+",z:"+fields(3)+",color:\""+color+"\"},")
@@ -80,7 +84,7 @@ object UserClustering2Print {
       val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
 
       val label = clusters.predict(x_value)
-//      val r_mean =
+      //      val r_mean =
       var color=""
       if(label==0){
         color="red"
@@ -107,6 +111,7 @@ object UserClustering2Print {
     val r_mean = df.describe("r").where("summary='mean'").head(1)(0)(1).toString.toDouble
     val log_f_mean = df.describe("log_f").where("summary='mean'").head(1)(0)(1).toString.toDouble
     val log_m_mean = df.describe("log_m").where("summary='mean'").head(1)(0)(1).toString.toDouble
+    println("Bisecting K means...")
     clusters.clusterCenters.foreach{x=>
       val r = x(0)
       val f = x(1)
