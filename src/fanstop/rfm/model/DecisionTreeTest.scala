@@ -17,18 +17,19 @@ object DecisionTreeTest {
     val sqlCon=new SQLContext(sc)
     import sqlCon.implicits._
     // Load and parse the data file.
-    val data = MLUtils.loadLibSVMFile(sc, "/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/labeledData/0226_uid")
+    val data = MLUtils.loadLibSVMFile(sc, "/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/labeledData/0227_uid/")
     // Split the data into training and test sets (30% held out for testing)
     val splits = data.randomSplit(Array(0.7, 0.3))
     val (trainingData, testData) = (splits(0), splits(1))
     val c =trainingData.count()
     println("train count: " + c)
-sc.stop()
+//sc.stop()
     // Train a DecisionTree model.
     //  Empty categoricalFeaturesInfo indicates all features are continuous.
     val numClasses = 8
     val categoricalFeaturesInfo = Map[Int, Int]()
-    val impurity = "gini"
+//    val impurity = "gini"
+    val impurity = "entropy"
     val maxDepth = 3
     val maxBins = 32
 
@@ -43,6 +44,9 @@ sc.stop()
     val testErr = labelAndPreds.filter(r => r._1 != r._2).count().toDouble / testData.count()
     println("Test Error = " + testErr)
     println("Learned classification tree model:\n" + model.toDebugString)
+//    println(model.topNode.split.
+    println(model.topNode.leftNode.toString)
+    println(model.topNode.rightNode.toString)
 //    println("tree model graph: " + model.)
 
     // Save and load model

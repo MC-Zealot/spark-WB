@@ -66,12 +66,13 @@ object UserClustering_2_text_BisectingKMeans {
       val fields = x.split(" ")
       val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
 
-      val label = clusters.predict(x_value)
+      var label = clusters.predict(x_value)
+//      label += 1
 //      println(label+" "+x)
-      label+" 0:"+fields(1)+" 1:"+fields(2)+" 2:"+fields(3)
+      label+" 1:"+fields(1)+" 2:"+fields(2)+" 3:"+fields(3)
       //      println("{x:"+fields(1)+",y:"+fields(2)+",z:"+fields(3)+",color:\""+color+"\"},")
     }
-      .repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/labeledData/0226_uid")
+      .repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/labeledData/0227_uid")
 
     // Save and load model
 //    clusters.save(sc, "target/org/apache/spark/KMeansExample/KMeansModel")

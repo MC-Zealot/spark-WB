@@ -105,11 +105,30 @@ object UserClustering2Print_kmeans {
       println(label+" "+x)
 //      println("{x:"+fields(1)+",y:"+fields(2)+",z:"+fields(3)+",color:\""+color+"\"},")
     }
-    val df = data.map(x=>TRAIN_DATA(x.split(" ")(0).toLong,x.split(" ")(1).toDouble,x.split(" ")(2).toDouble,x.split(" ")(3).toDouble)).toDF()
+    val df = data.map(x => TRAIN_DATA(x.split(" ")(0).toLong, x.split(" ")(1).toDouble, x.split(" ")(2).toDouble, x.split(" ")(3).toDouble)).toDF()
+    val count = df.count()
     df.describe().show
+    val sorted_r = df.select("r").sort("r").rdd.zipWithIndex().map { case (v, idx) => (idx, v) }
+    val sorted_log_f = df.select("log_f").sort("log_f").rdd.zipWithIndex().map { case (v, idx) => (idx, v) }
+    val sorted_log_m = df.select("log_m").sort("log_m").rdd.zipWithIndex().map { case (v, idx) => (idx, v) }
+
+    val median_r = sorted_r.lookup(count / 2).head(0).toString().toDouble
+    val median_log_f = sorted_log_f.lookup(count / 2).head(0).toString().toDouble
+    val median_log_m = sorted_log_m.lookup(count / 2).head(0).toString().toDouble
+
+
     val r_mean = df.describe("r").where("summary='mean'").head(1)(0)(1).toString.toDouble
     val log_f_mean = df.describe("log_f").where("summary='mean'").head(1)(0)(1).toString.toDouble
     val log_m_mean = df.describe("log_m").where("summary='mean'").head(1)(0)(1).toString.toDouble
+
+    println("r_mean: "+r_mean)
+    println("log_f_mean: "+log_f_mean)
+    println("log_m_mean: "+log_m_mean)
+
+    println("median_r: "+median_r)
+    println("median_log_f: "+median_log_f)
+    println("median_log_m: "+median_log_m)
+
     clusters.clusterCenters.foreach{x=>
       val r = x(0)
       val f = x(1)
@@ -117,13 +136,13 @@ object UserClustering2Print_kmeans {
       var r_tag = "-"
       var f_tag = "-"
       var m_tag = "-"
-      if(r > r_mean){
+      if(r > median_r){
         r_tag="+"
       }
       if(f > log_f_mean){
         f_tag="+"
       }
-      if(m > log_m_mean){
+      if(m > median_log_m){
         m_tag="+"
       }
       println(x+"\t\t\t"+ r_tag+" "+ f_tag+" "+ m_tag)
