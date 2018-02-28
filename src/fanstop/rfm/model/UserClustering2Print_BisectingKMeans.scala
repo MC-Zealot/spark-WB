@@ -18,7 +18,7 @@ object UserClustering2Print_BisectingKMeans {
     val sc = new SparkContext(sparkConf)
     sc.setLogLevel("error")
     // Load and parse the data
-    val data = sc.textFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0226_uid").map(_.split("\\|")(0)).distinct()
+    val data = sc.textFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0227_uid").map(_.split("\\|")(0)).distinct()
     val sqlCon=new SQLContext(sc)
     import sqlCon.implicits._
 
@@ -49,37 +49,36 @@ object UserClustering2Print_BisectingKMeans {
 
     clusters.predict(parsedData_train).map(x=>(x,1)).reduceByKey(_+_).sortByKey(false).take(numClusters).foreach(println)//不同group的个数
 //sc.stop
+//    data.take(100).foreach { x =>
+//      val uid = x.split(" ")(0)
+//      val fields = x.split(" ")
+//      val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
+//
+//      val label = clusters.predict(x_value)
+//      //      val r_mean =
+//      var color=""
+//      if(label==0){
+//        color="red"
+//      }else if(label==1){
+//        color="yellow"
+//      }else if(label==2){
+//        color="blue"
+//      }else if(label==3){
+//        color="green"
+//      }else if(label==4){
+//        color="black"
+//      }else if(label==5){
+//        color="orange"
+//      }else if(label==6){
+//        color="purple"
+//      }else if(label==7){
+//        color="brown"
+//      }else {
+//        color="grey"
+//      }
+//            println("{x:"+fields(1)+",y:"+fields(2)+",z:"+fields(3)+",color:\""+color+"\"},")
+//    }
     data.take(100).foreach { x =>
-      val uid = x.split(" ")(0)
-      val fields = x.split(" ")
-      val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
-
-      val label = clusters.predict(x_value)
-      //      val r_mean =
-      var color=""
-      if(label==0){
-        color="red"
-      }else if(label==1){
-        color="yellow"
-      }else if(label==2){
-        color="blue"
-      }else if(label==3){
-        color="green"
-      }else if(label==4){
-        color="black"
-      }else if(label==5){
-        color="orange"
-      }else if(label==6){
-        color="purple"
-      }else if(label==7){
-        color="brown"
-      }else {
-        color="grey"
-      }
-//      println(label+" "+x)
-            println("{x:"+fields(1)+",y:"+fields(2)+",z:"+fields(3)+",color:\""+color+"\"},")
-    }
-    data.take(50).foreach { x =>
       val uid = x.split(" ")(0)
       val fields = x.split(" ")
       val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
@@ -138,10 +137,10 @@ object UserClustering2Print_BisectingKMeans {
       var r_tag = "-"
       var f_tag = "-"
       var m_tag = "-"
-      if(r > median_r){
+      if(r >= r_mean){
         r_tag="+"
       }
-      if(f > log_f_mean){
+      if(f >= log_f_mean){
         f_tag="+"
       }
       if(m >= median_log_m){
