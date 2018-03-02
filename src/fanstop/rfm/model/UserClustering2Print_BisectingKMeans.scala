@@ -1,6 +1,9 @@
 package fanstop.rfm.model
 
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 import fanstop.rfm.model.UserClustering2Print_kmeans.TRAIN_DATA
 import org.apache.spark.mllib.clustering.{BisectingKMeans, KMeans, KMeansModel}
 import org.apache.spark.mllib.linalg.Vectors
@@ -12,6 +15,17 @@ import org.apache.spark.{SparkContext, SparkConf}
  * Created by yizhou on 2018/02/09.
  */
 object UserClustering2Print_BisectingKMeans {
+  /**
+    * 时间戳转时间
+    *
+    * @param time
+    * @return
+    */
+  def parseDate(time:String):String={
+    val sdf:SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
+    val date:String = sdf.format(new Date((time.toLong*1000l)))
+    date
+  }
   case class TRAIN_DATA(uid:Long, r:Double, log_f:Double, log_m:Double)//
   def main(args: Array[String]): Unit = {
     val sparkConf = new SparkConf().setAppName("UserClustering yizhou").setMaster("local[2]")
@@ -150,8 +164,33 @@ object UserClustering2Print_BisectingKMeans {
     }//不同group的中心点
 //      repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/labeledData/0223_uid")
 
+
+//    val ks:Array[Int] = Array(0,1,2,3,4,5,6,7)
+
+
     // Save and load model
-//    clusters.save(sc, "target/org/apache/spark/KMeansExample/KMeansModel")
+//    clusters.save(sc, "KMeansModel")
+    val oriMap = sc.textFile("file:///Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/data/201707_201802_all").filter(_.split("\t").length == 4).map { x =>
+      val fields = x.split("\t")
+      val uid = fields(1)
+      val ts = x.split("\t")(3)
+      val date = parseDate(ts)
+      (uid, x+"\t"+date)
+    }.groupByKey()
+
+    data.take(100).flatMap(x=>{
+      val uid = x.split(" ")(0)
+      val fields = x.split(" ")
+      val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
+      val label = clusters.predict(x_value)
+      //      label+" "+x+"|"+oriMap.get(uid)
+      oriMap.filter{case(key, _) => key.equals(uid)}
+        .values
+        .flatMap(i => i.toList)
+        .map(x=>(label,x)).collect()
+    }).sortWith(_._1< _._1).foreach(println)
+
+
 //    val sameModel = KMeansModel.load(sc, "target/org/apache/spark/KMeansExample/KMeansModel")
   }
 }

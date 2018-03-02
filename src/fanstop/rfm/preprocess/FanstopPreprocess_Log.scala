@@ -56,9 +56,10 @@ object FanstopPreprocess_Log {
 
     val sparkConf = new SparkConf().setAppName("FanstopPreprocess yizhou").setMaster("local[2]")
     val sc = new SparkContext(sparkConf)
+    sc.setLogLevel("error")
     val sqlCon=new SQLContext(sc)
     val LOG_M = Math.log(10)
-    val LOG_f = Math.log(5)
+    val LOG_f = Math.log(2)
     import sqlCon.implicits._
       val c = sc.textFile("file:///Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/data/201707_201802_all").
         filter(_.split("\t").length == 4).map { x =>
@@ -121,7 +122,7 @@ object FanstopPreprocess_Log {
         uid + " "+ rr + " " + log_ff + " " + log_mm+"|"+x
     }.
 //      take(100).foreach(println)
-      saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0226_uid")
+      saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0227_uid")
 
 
   }
