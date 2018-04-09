@@ -1,7 +1,7 @@
 package fanstop.rfm.preprocess
 
 /**
- * Created by yizhou on 2018/02/23
+ * Created by yizhou on 2018/04/09
  * rfm数据预处理
  * r：最近一次购买的时间距离当前时间的时间差，所以整体数据呈现线性分布
  * f：购买的次数。由于大部分用户只购买少量次数（5次以内，一个月），高于5次的用户数量很少，max为934（1个月），所以数据呈现非线性，需要进行非线性转换
@@ -12,8 +12,7 @@ package fanstop.rfm.preprocess
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import org.apache.spark.sql.{SparkSession, SQLContext}
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.SparkSession
 
 object FanstopPreprocess_Log_hive {
   /**
@@ -104,11 +103,6 @@ object FanstopPreprocess_Log_hive {
           RFM(x._1.toString,x._2,x._3,x._4, log_f, log_m)
         }
 
-
-
-
-
-
     val cdf = c.toDF()
 
     val r_max = cdf.describe("r").where("summary='max'").head(1)(0)(1).toString.toDouble
@@ -140,7 +134,7 @@ object FanstopPreprocess_Log_hive {
         uid + " "+ rr + " " + x.log_f + " " + x.log_m+"|"+x
     }.
 //      take(100).foreach(println)
-      saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0309_uid")
+      saveAsTextFile("/user_ext/ads_fanstop/yizhou/spark/fanstop/rfm/trainData/0409_uid")
 
 
   }
