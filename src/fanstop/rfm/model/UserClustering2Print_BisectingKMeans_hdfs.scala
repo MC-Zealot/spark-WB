@@ -50,19 +50,13 @@ object UserClustering2Print_BisectingKMeans_hdfs {
     val numIterations = 20
 
     val clusters = new BisectingKMeans().setK(numClusters).run(parsedData_train)
-
+    clusters.save(sc, model_path)//保存模型
     // Evaluate clustering by computing Within Set Sum of Squared Errors
     val WSSSE = clusters.computeCost(parsedData_train)
     println("Within Set Sum of Squared Errors = " + WSSSE)
 
     clusters.predict(parsedData_train).map(x=>(x,1)).reduceByKey(_+_).sortByKey(false).take(numClusters).foreach(println)//不同group的个数
-    data.map { x =>
-      val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
 
-      val label = clusters.predict(x_value)
-
-      label+" "+x
-    }.saveAsTextFile(labeledData_path)
 //sc.stop
 
     val df = data.map(x => TRAIN_DATA(x.split(" ")(0).toLong, x.split(" ")(1).toDouble, x.split(" ")(2).toDouble, x.split(" ")(3).toDouble)).toDF()
@@ -73,6 +67,7 @@ object UserClustering2Print_BisectingKMeans_hdfs {
     val sorted_log_m = df.select("log_m").sort("log_m").rdd.zipWithIndex().map { case (v, idx) => (idx, v) }
 
     val median_r = sorted_r.lookup(count / 2).head(0).formatted("%.2f").toDouble
+    val four_quarter_log_f = sorted_log_f.lookup(count / 4 * 3).head(0).formatted("%.2f").toDouble
     val median_log_f = sorted_log_f.lookup(count / 4 * 3).head(0).formatted("%.2f").toDouble
     val median_log_m = sorted_log_m.lookup(count / 2).head(0).formatted("%.2f").toDouble
 
@@ -86,37 +81,70 @@ object UserClustering2Print_BisectingKMeans_hdfs {
     println("log_m_mean: "+log_m_mean)
 
     println("median_r: "+median_r)
-    println("median_log_f: "+median_log_f)
+    println("four_quarter_log_f: "+four_quarter_log_f)
     println("median_log_m: "+median_log_m)
+    println("median_log_f: "+median_log_f)
 
-    clusters.clusterCenters.foreach{x=>
+
+    clusters.clusterCenters.map{x=>
       val r = x(0).formatted("%.2f").toDouble
       val f = x(1).formatted("%.2f").toDouble
       val m = x(2).formatted("%.2f").toDouble
-      var r_tag = "-"
-      var f_tag = "-"
-      var m_tag = "-"
+      var r_tag = 0
+      var f_tag = 0
+      var m_tag = 0
+
+      //根据中位数,和4分位数
       if(r >= r_mean){
-        r_tag="+"
+        r_tag=1
       }
-      if(f >= median_log_f){
-        f_tag="+"
+      if(f >= four_quarter_log_f){
+        f_tag=1
       }
       if(m >= median_log_m){
-        m_tag="+"
+        m_tag=1
       }
-      println(r+" "+f+" "+m+" " +"\t\t\t"+ r_tag+" "+ f_tag+" "+ m_tag)
-    }//不同group的中心点
-//      repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/labeledData/0223_uid")
+      println(r + " "+ f + " " + m + " " + "\t\t\t" + r_tag + " "+ f_tag + " " + m_tag)
 
+      var rfm_tag=""
+      var life_circle_tag=""
+      if(r_tag == 0 && f_tag == 0 && m_tag == 0){
+        rfm_tag="发展低价值"
+        life_circle_tag="发展"
+      }else if(r_tag == 0 && f_tag == 0 && m_tag == 1){
+        rfm_tag="发展高价值"
+        life_circle_tag="发展"
+      }else if(r_tag == 0 && f_tag == 1 && m_tag == 0){
+        rfm_tag="稳定低价值"
+        life_circle_tag="稳定"
+      }else if(r_tag == 0 && f_tag == 1 && m_tag == 1){
+        rfm_tag="稳定高价值"
+        life_circle_tag="稳定"
+      }else if(r_tag == 1 && f_tag == 1 && m_tag == 1){
+        rfm_tag="流失高频大客户"
+        life_circle_tag="流失"
+      }else if(r_tag == 1 && f_tag == 1 && m_tag == 0){
+          rfm_tag="流失高频小客户"
+          life_circle_tag="流失"
+      }else if(r_tag == 1 && f_tag == 0 && m_tag == 0){
+        rfm_tag="流失低频小客户"
+        life_circle_tag="流失"
+      }else if(r_tag == 1 && f_tag == 0 && m_tag == 1){
+        rfm_tag="流失低频大客户"
+        life_circle_tag="流失"
+      }else{
+        rfm_tag="未知"
+        life_circle_tag="未知"
+      }
+    }
 
-//    val ks:Array[Int] = Array(0,1,2,3,4,5,6,7)
+    data.map { x =>
+      val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
 
+      val label = clusters.predict(x_value)
 
-    // Save and load model
-    clusters.save(sc, model_path)
+      label+" "+x
+    }.saveAsTextFile(labeledData_path)
 
-
-//    val sameModel = KMeansModel.load(sc, "target/org/apache/spark/KMeansExample/KMeansModel")
   }
 }
