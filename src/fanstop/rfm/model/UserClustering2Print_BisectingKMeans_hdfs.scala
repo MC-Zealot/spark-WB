@@ -29,6 +29,15 @@ object UserClustering2Print_BisectingKMeans_hdfs {
     val sparkConf = new SparkConf().setAppName("UserClustering yizhou")
     val sc = new SparkContext(sparkConf)
     sc.setLogLevel("error")
+
+    var i = 0
+    args.foreach { x =>
+      println("input " + i + ": " + x)
+      i += 1
+    }
+
+    val labeledData_path = args(0)
+    val model_path = args(1)
     // Load and parse the data
     val data = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/fanstop/rfm/trainData/0409_uid").map(_.split("\\|")(0)).distinct()
     val sqlCon=new SQLContext(sc)
@@ -48,14 +57,12 @@ object UserClustering2Print_BisectingKMeans_hdfs {
 
     clusters.predict(parsedData_train).map(x=>(x,1)).reduceByKey(_+_).sortByKey(false).take(numClusters).foreach(println)//不同group的个数
     data.map { x =>
-      val uid = x.split(" ")(0)
-      val fields = x.split(" ")
       val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
 
       val label = clusters.predict(x_value)
 
       label+" "+x
-    }.saveAsTextFile("/user_ext/ads_fanstop/yizhou/spark/fanstop/rfm/labeledData/0410_uid")
+    }.saveAsTextFile(labeledData_path)
 //sc.stop
 
     val df = data.map(x => TRAIN_DATA(x.split(" ")(0).toLong, x.split(" ")(1).toDouble, x.split(" ")(2).toDouble, x.split(" ")(3).toDouble)).toDF()
@@ -66,7 +73,7 @@ object UserClustering2Print_BisectingKMeans_hdfs {
     val sorted_log_m = df.select("log_m").sort("log_m").rdd.zipWithIndex().map { case (v, idx) => (idx, v) }
 
     val median_r = sorted_r.lookup(count / 2).head(0).formatted("%.2f").toDouble
-    val median_log_f = sorted_log_f.lookup(count / 2).head(0).formatted("%.2f").toDouble
+    val median_log_f = sorted_log_f.lookup(count / 4 * 3).head(0).formatted("%.2f").toDouble
     val median_log_m = sorted_log_m.lookup(count / 2).head(0).formatted("%.2f").toDouble
 
 
@@ -92,7 +99,7 @@ object UserClustering2Print_BisectingKMeans_hdfs {
       if(r >= r_mean){
         r_tag="+"
       }
-      if(f >= log_f_mean){
+      if(f >= median_log_f){
         f_tag="+"
       }
       if(m >= median_log_m){
@@ -107,7 +114,7 @@ object UserClustering2Print_BisectingKMeans_hdfs {
 
 
     // Save and load model
-    clusters.save(sc, "/user_ext/ads_fanstop/yizhou/spark/fanstop/rfm/model/0410_KMeansModel")
+    clusters.save(sc, model_path)
 
 
 //    val sameModel = KMeansModel.load(sc, "target/org/apache/spark/KMeansExample/KMeansModel")
