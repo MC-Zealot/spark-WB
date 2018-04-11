@@ -53,7 +53,7 @@ object FanstopPreprocess_MaxMin {
     val sc = new SparkContext(sparkConf)
     val sqlCon=new SQLContext(sc)
     import sqlCon.implicits._
-    val c = sc.wholeTextFiles("file:///Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/data/").
+    val c = sc.wholeTextFiles("file:///Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/data/").distinct().
       filter(_._1.endsWith("all_fans")).
       flatMap(_._2.split("\n")).map{x=>
       val fields = x.split("\t")

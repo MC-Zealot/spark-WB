@@ -85,8 +85,8 @@ object UserClustering2Print_BisectingKMeans_hdfs {
     println("median_log_m: "+median_log_m)
     println("median_log_f: "+median_log_f)
 
-
-    clusters.clusterCenters.map{x=>
+    var cluster_id = -1
+    val m:Map[Int, (String, String)] = clusters.clusterCenters.map{x=>
       val r = x(0).formatted("%.2f").toDouble
       val f = x(1).formatted("%.2f").toDouble
       val m = x(2).formatted("%.2f").toDouble
@@ -104,7 +104,7 @@ object UserClustering2Print_BisectingKMeans_hdfs {
       if(m >= median_log_m){
         m_tag=1
       }
-      println(r + " "+ f + " " + m + " " + "\t\t\t" + r_tag + " "+ f_tag + " " + m_tag)
+//      println(r + " "+ f + " " + m + " " + "\t\t\t" + r_tag + " "+ f_tag + " " + m_tag)
 
       var rfm_tag=""
       var life_circle_tag=""
@@ -136,14 +136,20 @@ object UserClustering2Print_BisectingKMeans_hdfs {
         rfm_tag="未知"
         life_circle_tag="未知"
       }
-    }
+      cluster_id+=1
+      println(cluster_id+" "+r + " "+ f + " " + m + " " + "\t\t\t" + r_tag + " "+ f_tag + " " + m_tag+" "+rfm_tag+" "+life_circle_tag)
+      (cluster_id,(rfm_tag,life_circle_tag))
+    }.toMap
 
     data.map { x =>
       val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
-
+      val rfmArray = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble)).toArray
+      val score = rfmArray(0)+2*rfmArray(1)+rfmArray(2)
       val label = clusters.predict(x_value)
+      val s = m.get(label).getOrElse(0).toString
 
-      label+" "+x
+      val tag = s.substring(1,s.length-1).split(",")
+      x.split(" ")(0) +" "+tag(0)+" "+tag(1)+" "+score+" "+x
     }.saveAsTextFile(labeledData_path)
 
   }

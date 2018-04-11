@@ -54,21 +54,22 @@ object FanstopPreprocess_Log {
 
   def main(args: Array[String]) {
 
-    val sparkConf = new SparkConf().setAppName("FanstopPreprocess yizhou").setMaster("local[2]")
+    val sparkConf = new SparkConf().setAppName("Fanstop RFM Preprocess yizhou").setMaster("local[2]")
     val sc = new SparkContext(sparkConf)
     sc.setLogLevel("error")
     val sqlCon=new SQLContext(sc)
     val LOG_M = Math.log(10)
     val LOG_f = Math.log(2)
     import sqlCon.implicits._
-      val c = sc.textFile("file:///Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/data/201707_201802_all").
+    //粉条价格
+    val c = sc.textFile("file:///Users/Zealot/Documents/data/201707_201802_all").distinct.
         filter(_.split("\t").length == 4).map { x =>
         val fields = x.split("\t")
         val uid = fields(1)
-        val expo = fields(2)
+        val fentiao_price = fields(2).toDouble/1000 * 21
         val timestamps = fields(3)
 
-        (uid, (expo.toDouble, 1, timestamps))
+        (uid, (fentiao_price.toDouble, 1, timestamps))
     }.reduceByKey { (x, y) =>
       var r3 = ""
       if (x._3 < y._3) {
@@ -110,19 +111,19 @@ object FanstopPreprocess_Log {
     val diff_bound = upper - lower
 
     cdf.describe().show
-//    sc.stop
+    sc.stop
     val rr_fenmu = diff_r / diff_bound //优化一下速度，不用每个map里边都再计算一次乘法
     val log_ff_fenmu = diff_f / diff_bound
     val log_mm_fenmu = diff_m / diff_bound
     c.map { x =>
       val uid = x.uid
       val rr = (x.r - r_min) / rr_fenmu//max min 标准化
-      val log_ff = (x.log_f - log_f_min) / log_ff_fenmu
-      val log_mm = (x.log_m - log_m_min) / log_mm_fenmu
-        uid + " "+ rr + " " + log_ff + " " + log_mm+"|"+x
+//      val log_ff = (x.log_f - log_f_min) / log_ff_fenmu
+//      val log_mm = (x.log_m - log_m_min) / log_mm_fenmu
+        uid + " "+ rr + " " + x.log_f + " " + x.log_m+"|"+x
     }.
 //      take(100).foreach(println)
-      saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0227_uid")
+      saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0309_uid")
 
 
   }

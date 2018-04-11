@@ -32,7 +32,7 @@ object UserClustering2Print_BisectingKMeans {
     val sc = new SparkContext(sparkConf)
     sc.setLogLevel("error")
     // Load and parse the data
-    val data = sc.textFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0227_uid").map(_.split("\\|")(0)).distinct()
+    val data = sc.textFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0309_uid").map(_.split("\\|")(0)).distinct()
     val sqlCon=new SQLContext(sc)
     import sqlCon.implicits._
 
@@ -117,7 +117,7 @@ object UserClustering2Print_BisectingKMeans {
       }else{
         color="brown"
       }
-      println(label+" "+x)
+//      println(label+" "+x)
 //      println("{x:"+fields(1)+",y:"+fields(2)+",z:"+fields(3)+",color:\""+color+"\"},")
     }
     val df = data.map(x => TRAIN_DATA(x.split(" ")(0).toLong, x.split(" ")(1).toDouble, x.split(" ")(2).toDouble, x.split(" ")(3).toDouble)).toDF()
@@ -128,7 +128,18 @@ object UserClustering2Print_BisectingKMeans {
     val sorted_log_m = df.select("log_m").sort("log_m").rdd.zipWithIndex().map { case (v, idx) => (idx, v) }
 
     val median_r = sorted_r.lookup(count / 2).head(0).formatted("%.2f").toDouble
-    val median_log_f = sorted_log_f.lookup(count / 2).head(0).formatted("%.2f").toDouble
+    val slfc=sorted_log_f.count()
+
+    val a = sorted_log_f.lookup(count / 4 * 3)
+    val b = sorted_log_f.lookup(count / 5 * 4)
+
+    println("count/2: "+count/2)
+    println("slfc: "+slfc)
+    println("a: "+a)
+    println("b: "+b)
+
+
+    val median_log_f = sorted_log_f.lookup(count / 4 * 3).head(0).formatted("%.2f").toDouble
     val median_log_m = sorted_log_m.lookup(count / 2).head(0).formatted("%.2f").toDouble
 
 
@@ -154,14 +165,15 @@ object UserClustering2Print_BisectingKMeans {
       if(r >= r_mean){
         r_tag="+"
       }
-      if(f >= log_f_mean){
+      if(f >= median_log_f){
         f_tag="+"
       }
       if(m >= median_log_m){
         m_tag="+"
       }
-      println(x+"\t\t\t"+ r_tag+" "+ f_tag+" "+ m_tag)
+      println(r+" "+f+" "+m+" " +"\t\t\t"+ r_tag+" "+ f_tag+" "+ m_tag)
     }//不同group的中心点
+    sc.stop()
 //      repartition(1).saveAsTextFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/labeledData/0223_uid")
 
 
@@ -170,7 +182,7 @@ object UserClustering2Print_BisectingKMeans {
 
     // Save and load model
 //    clusters.save(sc, "KMeansModel")
-    val oriMap = sc.textFile("file:///Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/data/201707_201802_all").filter(_.split("\t").length == 4).map { x =>
+    val oriMap = sc.textFile("file:///Users/Zealot/Documents/data/201707_201802_all").filter(_.split("\t").length == 4).map { x =>
       val fields = x.split("\t")
       val uid = fields(1)
       val ts = x.split("\t")(3)
@@ -178,9 +190,8 @@ object UserClustering2Print_BisectingKMeans {
       (uid, x+"\t"+date)
     }.groupByKey()
 
-    data.take(100).flatMap(x=>{
+    data.take(200).flatMap(x=>{
       val uid = x.split(" ")(0)
-      val fields = x.split(" ")
       val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
       val label = clusters.predict(x_value)
       //      label+" "+x+"|"+oriMap.get(uid)
@@ -191,6 +202,6 @@ object UserClustering2Print_BisectingKMeans {
     }).sortWith(_._1< _._1).foreach(println)
 
 
-//    val sameModel = KMeansModel.load(sc, "target/org/apache/spark/KMeansExample/KMeansModel")
+    val sameModel = KMeansModel.load(sc, "target/org/apache/spark/KMeansExample/KMeansModel")
   }
 }

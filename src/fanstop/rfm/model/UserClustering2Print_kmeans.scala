@@ -16,7 +16,7 @@ object UserClustering2Print_kmeans {
     val sc = new SparkContext(sparkConf)
     sc.setLogLevel("error")
     // Load and parse the data
-    val data = sc.textFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0226_uid").map(_.split("\\|")(0)).distinct()
+    val data = sc.textFile("/Users/Zealot/yyt-git/SPARK_WB/src/fanstop/rfm/trainData/0305_uid").map(_.split("\\|")(0)).distinct()
     val sqlCon=new SQLContext(sc)
     import sqlCon.implicits._
 
@@ -24,7 +24,7 @@ object UserClustering2Print_kmeans {
 
     // Cluster the data into two classes using KMeans
     val numClusters = 8
-    val numIterations = 20
+    val numIterations = 500
 
     //选择err下降比较多的k：6
 //    var a = ArrayBuffer[String]()
@@ -46,7 +46,7 @@ object UserClustering2Print_kmeans {
 
 
     clusters.predict(parsedData_train).map(x=>(x,1)).reduceByKey(_+_).sortByKey(false).take(numClusters).foreach(println)//不同group的个数
-//sc.stop
+sc.stop
     data.take(100).foreach { x =>
       val uid = x.split(" ")(0)
       val fields = x.split(" ")
