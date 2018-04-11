@@ -31,6 +31,12 @@ object FanstopPreprocess_Log_hive {
     var hehe = dateFormat.format( now )
     hehe
   }
+  def getNowDate2():String={
+    var now:Date = new Date()
+    var  dateFormat:SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
+    var hehe = dateFormat.format( now )
+    hehe
+  }
   def tranTimeToLong(tm:String) :Long={
     val fm = new SimpleDateFormat("yyyyMMdd")
     val dt = fm.parse(tm)
@@ -54,24 +60,41 @@ object FanstopPreprocess_Log_hive {
     val day: Int = hour.toInt / 24
     day
   }
+  def getDiffTime(start_time: String, end_Time: String) = {
+    val df: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
+    val begin: Date = df.parse(start_time)
+    val end: Date = df.parse(end_Time)
+    val between: Long = (end.getTime() - begin.getTime()) / 1000 //转化成秒
+    val hour: Float = between.toFloat / 3600
+    val day: Int = hour.toInt / 24
+    day
+  }
 
   def main(args: Array[String]) {
+    var i = 0
+    args.foreach { x =>
+      println("input " + i + ": " + x)
+      i += 1
+    }
+    val train_data_path=args(0)
+    val start_date=args(1)
 
 
-        val spark = SparkSession
-          .builder()
-          .appName("Fanstop RFM Preprocess spark hive yizhou")
-          .config("spark.some.config.option", "some-value")
-          .config("spark.sql.warehouse.dir", "/dw_ext/ad/mds/")
-          .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-          .config("spark.kryoserializer.buffer.max", "512m")
-          .config("spark.rpc.message.maxSize", "512")
-          .config("spark.rpc.netty.dispatcher.numThreads", "2")
-          .enableHiveSupport()
-          .getOrCreate()
+    val spark = SparkSession
+      .builder()
+      .appName("Fanstop RFM Preprocess spark hive yizhou")
+      .config("spark.some.config.option", "some-value")
+      .config("spark.sql.warehouse.dir", "/dw_ext/ad/mds/")
+      .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .config("spark.kryoserializer.buffer.max", "512m")
+      .config("spark.rpc.message.maxSize", "512")
+      .config("spark.rpc.netty.dispatcher.numThreads", "2")
+      .enableHiveSupport()
+      .getOrCreate()
 
-        import spark.implicits._
-        val sqlDF = spark.sql("select cust_uid,consume,post_date  from sds_ad_headline_report_order_day where dt > 20180101")
+    import spark.implicits._
+//    val sqlDF = spark.sql("select cust_uid,consume,post_date from sds_ad_headline_report_order_day where dt >= 20180101")
+    val sqlDF = spark.sql("select cust_uid,consume,post_date from sds_ad_headline_report_order_day where dt >= "+ start_date)
     //得到uid,tag，score，fans_count，
     val LOG_M = Math.log(10)
     val LOG_f = Math.log(2)
@@ -79,10 +102,10 @@ object FanstopPreprocess_Log_hive {
           val uid = x(0)
           val fentiao_price = x(1).toString.toDouble
           val post_date = x(2).toString
-          (uid,(fentiao_price, 1, tranTimeToLong(post_date)))
+          (uid,(fentiao_price, 1, post_date))
         }.reduceByKey{(x,y)=>
-          var r3 = 0l
-          if (x._3.toString.toLong < y._3) {
+          var r3 = ""
+          if (x._3.toString.toLong < y._3.toString.toLong) {
             r3 = y._3
           } else {
             r3 = x._3
@@ -93,7 +116,8 @@ object FanstopPreprocess_Log_hive {
           val expo = x._2._1
           val count = x._2._2
           val timestamps = x._2._3.toString
-          val recency = getCoreTime(parseDate(timestamps), getNowDate())
+//          val recency = getCoreTime(parseDate(timestamps), getNowDate())
+          val recency = getDiffTime(timestamps, getNowDate2)
 
           (uid,recency,count,expo)
         }.filter(x=>(x._4 >= 1)).map{x=>
@@ -134,7 +158,8 @@ object FanstopPreprocess_Log_hive {
         uid + " "+ rr + " " + x.log_f + " " + x.log_m+"|"+x
     }.
 //      take(100).foreach(println)
-      saveAsTextFile("/user_ext/ads_fanstop/yizhou/spark/fanstop/rfm/trainData/0409_uid")
+//      saveAsTextFile("/user_ext/ads_fanstop/yizhou/spark/fanstop/rfm/trainData/0409_uid")
+      saveAsTextFile(train_data_path)
 
 
   }
