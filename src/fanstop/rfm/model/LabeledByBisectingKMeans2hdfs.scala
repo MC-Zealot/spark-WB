@@ -3,7 +3,8 @@ package fanstop.rfm.model
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import org.apache.spark.mllib.clustering.{KMeansModel, BisectingKMeans}
+import org.apache.spark.mllib.clustering.BisectingKMeansModel
+
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
@@ -28,7 +29,9 @@ object LabeledByBisectingKMeans2hdfs {
   case class TRAIN_DATA(uid:Long, r:Double, log_f:Double, log_m:Double)//
   def main(args: Array[String]): Unit = {
     val sparkConf = new SparkConf().setAppName("UserClustering yizhou")
+    sparkConf.set("spark.dynamicAllocation.enabled","false");
     val sc = new SparkContext(sparkConf)
+
     sc.setLogLevel("error")
 
     var i = 0
@@ -46,9 +49,8 @@ object LabeledByBisectingKMeans2hdfs {
     val data = sc.textFile(train_data_path).map(_.split("\\|")(0)).distinct()
     val sqlCon=new SQLContext(sc)
     import sqlCon.implicits._
-
-    val clusters = KMeansModel.load(sc, model_path) //加载模型
-
+    val clusters = BisectingKMeansModel.load(sc,model_path) //加载模型
+//    clusters.pr
 
     val df = data.map(x => TRAIN_DATA(x.split(" ")(0).toLong, x.split(" ")(1).toDouble, x.split(" ")(2).toDouble, x.split(" ")(3).toDouble)).toDF()
     val count = df.count()
@@ -77,6 +79,7 @@ object LabeledByBisectingKMeans2hdfs {
     println("median_log_f: "+median_log_f)
 
     var cluster_id = -1
+
     val m:Map[Int, (String, String)] = clusters.clusterCenters.map{x=>
       val r = x(0).formatted("%.2f").toDouble
       val f = x(1).formatted("%.2f").toDouble

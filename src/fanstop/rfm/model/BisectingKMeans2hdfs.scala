@@ -5,14 +5,13 @@ import java.util.Date
 
 import org.apache.spark.mllib.clustering.BisectingKMeans
 import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
 
 
 /**
   * 每月训练聚类模型
- * Created by yizhou on 2018/04/11.
- */
+  * Created by yizhou on 2018/04/11.
+  */
 object BisectingKMeans2hdfs {
   /**
     * 时间戳转时间
@@ -48,7 +47,8 @@ object BisectingKMeans2hdfs {
     val numIterations = 30
 
     val clusters = new BisectingKMeans().setK(numClusters).run(parsedData_train)
-    clusters.save(sc, model_path)//保存模型
+    clusters.save(sc, model_path)//保存模型,备份
+    clusters.save(sc, "/user_ext/ads_fanstop/yizhou/spark/fanstop/rfm/model/BisectingKMeans/working")//保存模型,使用
     // Evaluate clustering by computing Within Set Sum of Squared Errors
     val WSSSE = clusters.computeCost(parsedData_train)
     println("Within Set Sum of Squared Errors = " + WSSSE)
