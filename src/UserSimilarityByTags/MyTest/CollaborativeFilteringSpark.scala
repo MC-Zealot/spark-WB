@@ -98,5 +98,13 @@ object CollaborativeFilteringSpark {
 //    val user1FilmSource = Map("smzdm" -> 2, "ylxb" -> 3, "znh" -> 1, "nhsc" -> 0, "fcwr" -> 1)
 //    val user2FilmSource = Map("smzdm" -> 1, "ylxb" -> 2, "znh" -> 2, "nhsc" -> 1, "fcwr" -> 4)
 //    print(similarity(user1FilmSource,user2FilmSource))
+    sc.textFile("file:///Users/Zealot/Desktop/exp/all").filter(_.split(",").length>29).map(_.split(",")).map{x=>
+      val len = x.length
+      (x(2),x(len-20).toDouble)}.reduceByKey(_+_).map(x=>x._1+"\t"+x._2).repartition(1).saveAsTextFile("file:///Users/Zealot/Desktop/uid_shouru4")
+
+
+    sc.textFile("file:///Users/Zealot/Desktop/exp/all").filter(_.contains("2349616595")).filter(_.split(",").length>29).map(_.split(",")).map{x=>
+       val len = x.length
+       (x(2),x(len-20).toDouble)}.reduceByKey(_+_).collect
   }
 }
