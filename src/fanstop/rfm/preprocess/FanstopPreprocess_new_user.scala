@@ -26,7 +26,7 @@ object FanstopPreprocess_new_user {
   }
   def getNowDate():String={
     var now:Date = new Date()
-    var  dateFormat:SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
+    var  dateFormat:SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
     var hehe = dateFormat.format( now )
     hehe
   }
@@ -47,23 +47,15 @@ object FanstopPreprocess_new_user {
 
   def main(args: Array[String]) {
     val start_day=args(0).toInt
-//做一个过滤，粉丝数》50，标签保留人数的top50
-    val sparkConf = new SparkConf().setAppName("FanstopPreprocess yizhou").setMaster("local[2]")
-    val sc = new SparkContext(sparkConf)
-    val sqlCon=new SQLContext(sc)
-    import sqlCon.implicits._
-    val xunjia = sc.wholeTextFiles("file:///data0/ads_fanstop/yizhou/fanstop/data_xunjia/").
-      filter(_._1.split(".")(0).toInt > start_day).
-      flatMap(_._2.split("\n")).map{x=>
-      val fields = x.split("\t")
-      val uid = fields(1)
-     uid.toInt
-    }.distinct()
+
+
     val spark = SparkSession
       .builder()
       .appName("Fanstop RFM Preprocess spark hive yizhou")
       .config("spark.some.config.option", "some-value")
-      .config("spark.sql.warehouse.dir", "/dw_ext/ad/mds/")
+//      .config("spark.sql.warehouse.dir", "/dw_ext/ad/mds/")
+//      .config("spark.sql.warehouse.dir", "/dw/sds/")
+//      .config("spark.sql.warehouse.dir", "/dw/ods/")
       .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
       .config("spark.kryoserializer.buffer.max", "512m")
       .config("spark.rpc.message.maxSize", "512")
@@ -73,10 +65,10 @@ object FanstopPreprocess_new_user {
 
     import spark.implicits._
     //    val sqlDF = spark.sql("se
-    val sqlDF = spark.sql("select cust_uid,consume,post_date from sds_ad_headline_report_order_day where dt >= "+ start_day)
-    val goumai = sqlDF.rdd.map(x=>x(0).toString.toInt).distinct()
-    val new_user = xunjia.subtract(goumai)
-    new_user.map(x=>x+" 引入期   0").repartition(1).saveAsTextFile("file:///data0/ads_fanstop/yizhou/fanstop/new_user/"+getNowDate())
+    val sqlDF = spark.sql("select distinct(uid) from data_xunjia where dt >= "+start_day+" and uid not in (select distinct(uid) from sds_ad_headline_report_order_day where dt>="+start_day+")")
+//    val sqlDF = spark.sql("select distinct(cust_uid) from ods_ad_headline_order_reads_info where dt>="+start_day)
+    val new_user = sqlDF.rdd.map(x=>x(0).toString).distinct()
+    new_user.map(x=>x+" 初入期 初入期 0.1").repartition(1).saveAsTextFile("/user_ext/ads_fanstop/yizhou/spark/fanstop/rfm/new_user/"+getNowDate())
 
 
   }

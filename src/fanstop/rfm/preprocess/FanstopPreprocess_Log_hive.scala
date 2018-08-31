@@ -94,7 +94,7 @@ object FanstopPreprocess_Log_hive {
 
     import spark.implicits._
 //    val sqlDF = spark.sql("select cust_uid,consume,post_date from sds_ad_headline_report_order_day where dt >= 20180101")
-    val sqlDF = spark.sql("select cust_uid,consume,post_date from sds_ad_headline_report_order_day where dt >= "+ start_date)
+    val sqlDF = spark.sql("select if(agent_consume > 0, cost_uid, cust_uid), consume - refund_consume,post_date from sds_ad_headline_report_order_day where dt >= "+ start_date+" union all select cust_uid,consume,regexp_replace(post_date,'-','') from sds_ad_upfans_report_order_day where dt >="+ start_date)
     //得到uid,tag，score，fans_count，
     val LOG_M = Math.log(10)
     val LOG_f = Math.log(2)
@@ -120,7 +120,7 @@ object FanstopPreprocess_Log_hive {
           val recency = getDiffTime(timestamps, getNowDate2)
 
           (uid,recency,count,expo)
-        }.filter(x=>(x._4 >= 1)).map{x=>
+        }.filter(x=>(x._4 >= 1)).filter(x=>(x._1 !=null)).map{x=>
           val log_f = Math.log(x._3)/LOG_f//log标准化
         val log_m = Math.log(x._4)/LOG_M
 

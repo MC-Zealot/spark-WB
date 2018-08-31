@@ -42,7 +42,7 @@ object LabeledByBisectingKMeans2hdfs {
 
     val labeledData_path = args(0)
     val model_path = args(1)
-    val train_data_path=args(2)
+      val train_data_path=args(2)
 
     // Load and parse the data
 //    val data = sc.textFile("/user_ext/ads_fanstop/yizhou/spark/fanstop/rfm/trainData/0409_uid").map(_.split("\\|")(0)).distinct()
@@ -103,32 +103,32 @@ object LabeledByBisectingKMeans2hdfs {
       var rfm_tag=""
       var life_circle_tag=""
       if(r_tag == 0 && f_tag == 0 && m_tag == 0){
-        rfm_tag="发展低价值"
-        life_circle_tag="发展"
+        rfm_tag="增长低价值"
+        life_circle_tag="增长期"
       }else if(r_tag == 0 && f_tag == 0 && m_tag == 1){
-        rfm_tag="发展高价值"
-        life_circle_tag="发展"
+        rfm_tag="增长高价值"
+        life_circle_tag="增长期"
       }else if(r_tag == 0 && f_tag == 1 && m_tag == 0){
-        rfm_tag="稳定低价值"
-        life_circle_tag="稳定"
+        rfm_tag="高峰低价值"
+        life_circle_tag="高峰期"
       }else if(r_tag == 0 && f_tag == 1 && m_tag == 1){
-        rfm_tag="稳定高价值"
-        life_circle_tag="稳定"
+        rfm_tag="高峰高价值"
+        life_circle_tag="高峰期"
       }else if(r_tag == 1 && f_tag == 1 && m_tag == 1){
         rfm_tag="流失高频大客户"
-        life_circle_tag="流失"
+        life_circle_tag="流失期"
       }else if(r_tag == 1 && f_tag == 1 && m_tag == 0){
           rfm_tag="流失高频小客户"
-          life_circle_tag="流失"
+          life_circle_tag="流失期"
       }else if(r_tag == 1 && f_tag == 0 && m_tag == 0){
         rfm_tag="流失低频小客户"
-        life_circle_tag="流失"
+        life_circle_tag="流失期"
       }else if(r_tag == 1 && f_tag == 0 && m_tag == 1){
         rfm_tag="流失低频大客户"
-        life_circle_tag="流失"
+        life_circle_tag="流失期"
       }else{
         rfm_tag="未知"
-        life_circle_tag="未知"
+        life_circle_tag="未知期"
       }
       cluster_id+=1
       println(cluster_id+" "+r + " "+ f + " " + m + " " + "\t\t\t" + r_tag + " "+ f_tag + " " + m_tag+" "+rfm_tag+" "+life_circle_tag)
@@ -138,13 +138,12 @@ object LabeledByBisectingKMeans2hdfs {
     data.map { x =>
       val x_value = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble))
       val rfmArray = Vectors.dense(x.split(" ").slice(1, 4).map(_.toDouble)).toArray
-      val score = rfmArray(0)+2*rfmArray(1)+rfmArray(2)
+      val score = rfmArray(0) +  rfmArray(1) + 5 * rfmArray(2)
       val label = clusters.predict(x_value)
       val s = m.get(label).getOrElse(0).toString
 
       val tag = s.substring(1,s.length-1).split(",")
       x.split(" ")(0) +" "+tag(0)+" "+tag(1)+" "+score+" "+x
     }.saveAsTextFile(labeledData_path)
-
   }
 }
